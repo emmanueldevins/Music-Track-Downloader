@@ -1,0 +1,104 @@
+name: Build & Release
+
+# On every push to main: build Mac + Windows and publish to the "latest" GitHub Release.
+# README download links then always point at current builds.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: macOS (Apple Silicon)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Mac app
+        run: |
+          chmod +x build_app.sh
+          ./build_app.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CHARLIEDL-mac-arm64
+          path: dist/CHARLIEDL-mac-arm64.zip
+
+  build-windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Windows app
+        shell: pwsh
+        run: ./build_windows.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CHARLIEDL-win64
+          path: dist/CHARLIEDL-win64.zip
+
+  publish:
+    name: Publish GitHub Release
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Mac zip
+        uses: actions/download-artifact@v4
+        with:
+          name: CHARLIEDL-mac-arm64
+          path: release-assets
+
+      - name: Download Windows zip
+        uses: actions/download-artifact@v4
+        with:
+          name: CHARLIEDL-win64
+          path: release-assets
+
+      - name: Publish / update latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest builds (auto)
+          body: |
+            **Personal / educational use only — no commercial use.** See [LICENSE](../blob/main/LICENSE) and [README](../blob/main/README.md).
+
+            These builds are updated automatically on every push to `main`.
+
+            | Platform | File |
+            |----------|------|
+            | macOS Apple Silicon | `CHARLIEDL-mac-arm64.zip` |
+            | Windows 64-bit | `CHARLIEDL-win64.zip` |
+
+            ### Install
+            - **Mac:** unzip → right-click `CHARLIEDL.app` → Open
+            - **Windows:** unzip → `CHARLIEDL.exe` (SmartScreen → More info → Run anyway)
+
+            Commit: `${{ github.sha }}`
+          files: |
+            release-assets/CHARLIEDL-mac-arm64.zip
+            release-assets/CHARLIEDL-win64.zip
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

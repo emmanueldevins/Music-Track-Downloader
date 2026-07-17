@@ -11,22 +11,42 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 
 resolve_python() {
+  # Prefer explicit env (CI), then common local installs.
+  if [[ -n "${PYTHON_BIN:-}" && -x "${PYTHON_BIN}" ]]; then
+    echo "$PYTHON_BIN"
+    return
+  fi
+  if command -v python3.11 >/dev/null 2>&1; then
+    command -v python3.11
+    return
+  fi
   if command -v python3.10 >/dev/null 2>&1; then
     command -v python3.10
-  elif [[ -x /opt/homebrew/bin/python3.10 ]]; then
-    echo /opt/homebrew/bin/python3.10
-  else
-    echo "Python 3.10 required: brew install python@3.10" >&2
-    exit 1
+    return
   fi
+  if [[ -x /opt/homebrew/bin/python3.10 ]]; then
+    echo /opt/homebrew/bin/python3.10
+    return
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    command -v python3
+    return
+  fi
+  echo "Python 3.10+ required" >&2
+  exit 1
 }
 
 PY="$(resolve_python)"
 VENV="$ROOT/.venv"
+# CI: use a fresh venv name so runners don't clash with a stale local .venv
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+  VENV="$ROOT/.venv-ci"
+fi
 if [[ ! -x "$VENV/bin/python" ]]; then
   "$PY" -m venv "$VENV"
 fi
 
+"$VENV/bin/pip" install -q -U pip
 "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt" pyinstaller imageio-ffmpeg
 
 echo "Building CHARLIEDL.app (takes a few minutes)…"
@@ -71,13 +91,27 @@ DENO_BIN="$(command -v deno || true)"
 if [[ -z "$DENO_BIN" && -x /opt/homebrew/bin/deno ]]; then
   DENO_BIN=/opt/homebrew/bin/deno
 fi
+if [[ -z "$DENO_BIN" || ! -x "$DENO_BIN" ]]; then
+  DENO_CACHE="$ROOT/build/deno-cache"
+  mkdir -p "$DENO_CACHE"
+  ARCH="$(uname -m)"
+  if [[ "$ARCH" == "arm64" ]]; then
+    DENO_ZIP_URL="https://github.com/denoland/deno/releases/latest/download/deno-aarch64-apple-darwin.zip"
+  else
+    DENO_ZIP_URL="https://github.com/denoland/deno/releases/latest/download/deno-x86_64-apple-darwin.zip"
+  fi
+  echo "Downloading Deno…"
+  curl -fsSL -o "$DENO_CACHE/deno.zip" "$DENO_ZIP_URL"
+  unzip -o -q "$DENO_CACHE/deno.zip" -d "$DENO_CACHE"
+  DENO_BIN="$DENO_CACHE/deno"
+  chmod +x "$DENO_BIN"
+fi
 if [[ -n "$DENO_BIN" && -x "$DENO_BIN" ]]; then
   cp "$DENO_BIN" "$APP/Contents/MacOS/deno"
   chmod +x "$APP/Contents/MacOS/deno"
   echo "Bundled deno into the app."
 else
   echo "Warning: deno not found — YouTube downloads may fail in the .app." >&2
-  echo "Install with: brew install deno" >&2
 fi
 
 # Zip for AirDrop / Drive (single file to send)

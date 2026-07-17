@@ -66,12 +66,16 @@ Stable downloads are published on **GitHub Releases** (not inside the git repo �
 
 ## How builds get onto Releases
 
-| Platform | How |
-|----------|-----|
-| **Windows** | GitHub Actions builds the zip and attaches it to the release (see Actions → **Build Windows**). |
-| **macOS** | Built on a Mac (`./build_app.sh`), then the zip is uploaded to the same GitHub Release (web UI or `./publish_mac_release.sh`). |
+Every push to **`main`** runs GitHub Actions (**Build & Release**):
 
-Do **not** commit `.app` / `.exe` / large zips into git — it bloats the repo. Releases are the right place for downloads.
+1. Builds **macOS** (Apple Silicon) and **Windows** in the cloud  
+2. Publishes both zips to the **[Latest builds](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest)** release  
+
+README download links always point at that release — no need to upload Mac by hand.
+
+You can also trigger a rebuild manually: **Actions → Build & Release → Run workflow**.
+
+Do **not** commit `.app` / `.exe` / large zips into git — Releases stay the download source.
 
 ---
 
@@ -101,8 +105,9 @@ Upload the zip to a GitHub Release (or run `./publish_mac_release.sh v1.0.0` if 
 
 ### Windows app
 
-- **CI:** Actions → **Build Windows** → Run workflow (optionally publish to a release tag)
-- **Or** on a Windows PC: `.\build_windows.ps1`
+Built automatically by CI on push to `main`. Manual rebuild: Actions → **Build & Release**.
+
+On a Windows PC: `.\build_windows.ps1`
 
 ### Dev GUI (Mac)
 
@@ -142,7 +147,7 @@ Requires Python 3.10+. Optional: `brew install ffmpeg deno`.
 | `download_playlist.py` | Download engine |
 | `build_app.sh` | macOS package |
 | `build_windows.ps1` | Windows package |
-| `.github/workflows/build-windows.yml` | Windows CI + release upload |
+| `.github/workflows/build-and-release.yml` | Auto Mac + Windows build & release |
 | `LICENSE` | Personal-use license / disclaimer |
 
 ---
