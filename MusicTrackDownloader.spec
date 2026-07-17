@@ -17,6 +17,7 @@ binaries = []
 hiddenimports = [
     "download_playlist",
     "version",
+    "certifi",
     "mutagen",
     "mutagen.mp4",
     "mutagen.id3",
@@ -24,13 +25,14 @@ hiddenimports = [
     "imageio_ffmpeg",
 ]
 
-for package in ("yt_dlp", "imageio_ffmpeg", "mutagen"):
+for package in ("yt_dlp", "imageio_ffmpeg", "mutagen", "certifi"):
     pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
     datas += pkg_datas
     binaries += pkg_binaries
     hiddenimports += pkg_hidden
 
 datas += collect_data_files("imageio_ffmpeg")
+datas += collect_data_files("certifi")
 
 a = Analysis(
     [str(root / "app_gui.py")],

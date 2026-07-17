@@ -52,6 +52,8 @@ from version import (
     APP_VERSION,
     DOWNLOAD_MAC_URL,
     DOWNLOAD_WIN_URL,
+    GITHUB_OWNER,
+    GITHUB_REPO,
     RELEASES_URL,
     REMOTE_VERSION_URL,
 )
@@ -83,19 +85,74 @@ def version_is_newer(remote: str, local: str) -> bool:
     return parse_version(remote) > parse_version(local)
 
 
-def fetch_remote_version(timeout: float = 6.0) -> str | None:
-    """Read VERSION from GitHub main branch."""
+def _ssl_context():
+    """CA bundle that works inside a frozen PyInstaller .app (macOS often lacks system certs)."""
+    import ssl
+
     try:
-        request = urllib.request.Request(
-            REMOTE_VERSION_URL,
-            headers={"User-Agent": f"{APP_NAME}/{APP_VERSION}"},
-        )
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = response.read().decode("utf-8", "ignore").strip()
-        if raw and parse_version(raw) != (0,):
-            return raw.splitlines()[0].strip()
-    except (OSError, urllib.error.URLError, ValueError):
-        pass
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:  # noqa: BLE001
+        return ssl.create_default_context()
+
+
+def _parse_version_body(raw: str) -> str | None:
+    text = (raw or "").strip()
+    if not text:
+        return None
+    first = text.splitlines()[0].strip().lstrip("vV")
+    if first and parse_version(first) != (0,):
+        return first
+    return None
+
+
+def fetch_remote_version(timeout: float = 8.0) -> str | None:
+    """Read VERSION from GitHub (urllib + certifi, then curl fallback)."""
+    urls = (
+        REMOTE_VERSION_URL,
+        f"https://cdn.jsdelivr.net/gh/{GITHUB_OWNER}/{GITHUB_REPO}@main/VERSION",
+    )
+
+    # 1) urllib with certifi (fixes most frozen-app SSL failures on Mac)
+    for url in urls:
+        try:
+            request = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": f"{APP_NAME}/{APP_VERSION}",
+                    "Accept": "text/plain",
+                    "Cache-Control": "no-cache",
+                },
+            )
+            with urllib.request.urlopen(
+                request, timeout=timeout, context=_ssl_context()
+            ) as response:
+                parsed = _parse_version_body(
+                    response.read().decode("utf-8", "ignore")
+                )
+                if parsed:
+                    return parsed
+        except (OSError, urllib.error.URLError, ValueError):
+            continue
+
+    # 2) system curl (macOS always has it; uses Keychain trust store)
+    for url in urls:
+        try:
+            result = subprocess.run(
+                ["curl", "-fsSL", "--max-time", str(int(timeout)), url],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout + 2,
+            )
+            if result.returncode == 0:
+                parsed = _parse_version_body(result.stdout)
+                if parsed:
+                    return parsed
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+
     return None
 
 
@@ -611,8 +668,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.log_panel)
         layout.addStretch(1)
 
-        # Check for updates shortly after launch (non-blocking).
-        QTimer.singleShot(1200, lambda: self._start_update_check(force_dialog=True))
+        # Check for updates shortly after launch (banner only; no error modal).
+        QTimer.singleShot(1200, lambda: self._start_update_check(force_dialog=False))
 
     def _download_url_for_platform(self) -> str:
         return DOWNLOAD_WIN_URL if sys.platform == "win32" else DOWNLOAD_MAC_URL
@@ -666,9 +723,11 @@ class MainWindow(QMainWindow):
         )
         self.update_banner.show()
         self.set_status(f"Mise à jour disponible : v{remote}", "warn")
+        if not force_dialog:
+            return
+
         self.raise_()
         self.activateWindow()
-
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Information)
         box.setWindowTitle("Mise à jour disponible")
