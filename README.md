@@ -76,7 +76,9 @@ Every push to **`main`** runs GitHub Actions (**Build & Release**):
 1. Builds **macOS** (Apple Silicon) and **Windows** in the cloud  
 2. Publishes both zips to the **[Latest builds](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest)** release  
 
-To ship a new version number: bump [`VERSION`](VERSION) **and** `APP_VERSION` in [`version.py`](version.py), then push.
+To ship updates: just **push to `main`**. CI auto-bumps the patch version (`1.1.0` → `1.1.1`), rebuilds Mac + Windows, and refreshes the Latest release. Old apps detect the new `VERSION` on GitHub and prompt to update.
+
+Manual bump (optional): `python bump_version.py` or `python bump_version.py --set 2.0.0`
 
 ---
 
@@ -144,7 +146,7 @@ Requires Python 3.10+. Optional: `brew install ffmpeg deno`.
 |------|------|
 | `app_gui.py` | Desktop UI |
 | `download_playlist.py` | Download engine |
-| `version.py` / `VERSION` | App name + version |
+| `version.py` / `VERSION` / `bump_version.py` | App name + auto version bump |
 | `build_app.sh` | macOS package |
 | `build_windows.ps1` | Windows package |
 | `.github/workflows/build-and-release.yml` | Auto Mac + Windows build & release |
