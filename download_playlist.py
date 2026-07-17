@@ -131,7 +131,7 @@ def has_real_ffprobe() -> bool:
         _ffprobe_is_real = False
         return False
 
-    wrap = Path(tempfile.gettempdir()) / "charliedl-ffmpeg-bin" / platform_tool("ffprobe")
+    wrap = Path(tempfile.gettempdir()) / "mtd-ffmpeg-bin" / platform_tool("ffprobe")
     try:
         if Path(probe).resolve() == wrap.resolve():
             _ffprobe_is_real = False
@@ -162,7 +162,7 @@ def resolve_ffmpeg_dir() -> str | None:
 
     extend_system_path()
 
-    # 1) Bundled next to CHARLIEDL executable (static ffmpeg + ffprobe)
+    # 1) Bundled next to the app executable (static ffmpeg + ffprobe)
     if getattr(sys, "frozen", False):
         exe_dir = Path(sys.executable).resolve().parent
         ff_name = platform_tool("ffmpeg")
@@ -229,7 +229,7 @@ def resolve_ffmpeg_dir() -> str | None:
         _ffmpeg_location = ""
         return None
 
-    wrap = Path(tempfile.gettempdir()) / "charliedl-ffmpeg-bin"
+    wrap = Path(tempfile.gettempdir()) / "mtd-ffmpeg-bin"
     wrap.mkdir(parents=True, exist_ok=True)
     ff_name = platform_tool("ffmpeg")
     fp_name = platform_tool("ffprobe")
@@ -1188,7 +1188,7 @@ def download_playlist(
             explain_cookie_failure("safari")
             browser_for_auth = None
         else:
-            temp_cookie_path = Path(tempfile.mkdtemp(prefix="charliedl-cookies-")) / "cookies.txt"
+            temp_cookie_path = Path(tempfile.mkdtemp(prefix="mtd-cookies-")) / "cookies.txt"
             log(f"Export des cookies {browser_for_auth}…")
             try:
                 cookie_file = export_browser_cookies(browser_for_auth, temp_cookie_path)

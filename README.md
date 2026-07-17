@@ -5,10 +5,10 @@
 
 Desktop tool to download **music tracks and playlists** as audio files (e.g. for personal DJ / USB practice).
 
+**Version:** see [`VERSION`](VERSION) (shown in the app as `v…`)
+
 **Supported today:** SoundCloud & YouTube (tracks + playlists)  
 **Planned (maybe):** Deezer, Spotify  
-
-> App binary name: **CHARLIEDL** (`CHARLIEDL.app` / `CHARLIEDL.exe`)
 
 ---
 
@@ -35,7 +35,7 @@ Full text: see [`LICENSE`](LICENSE).
 
 ## Download (ready-made builds)
 
-Stable downloads are published on **GitHub Releases** (not inside the git repo — binaries are large).
+Stable downloads are published on **GitHub Releases**.
 
 ### Latest release
 
@@ -43,24 +43,29 @@ Stable downloads are published on **GitHub Releases** (not inside the git repo �
 
 | Platform | File | Direct link |
 |----------|------|-------------|
-| **macOS** (Apple Silicon) | `CHARLIEDL-mac-arm64.zip` | [Download Mac](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest/download/CHARLIEDL-mac-arm64.zip) |
-| **Windows** (64-bit) | `CHARLIEDL-win64.zip` | [Download Windows](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest/download/CHARLIEDL-win64.zip) |
+| **macOS** (Apple Silicon) | `MusicTrackDownloader-mac-arm64.zip` | [Download Mac](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest/download/MusicTrackDownloader-mac-arm64.zip) |
+| **Windows** (64-bit) | `MusicTrackDownloader-win64.zip` | [Download Windows](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest/download/MusicTrackDownloader-win64.zip) |
 
-> If a link 404s, the release is not published yet — open [Releases](https://github.com/emmanueldevins/Music-Track-Downloader/releases) or build from source below.
+> If a link 404s, wait for the CI build to finish, then refresh.
 
 ### Install notes
 
 **macOS**
 
-1. Download the Mac zip → unzip → `CHARLIEDL.app`
+1. Download the Mac zip → unzip → `Music Track Downloader.app`
 2. First launch: **right-click → Open** (Gatekeeper)
-3. Files save to `~/Downloads/CHARLIEDL`
+3. Files save to `~/Downloads/MusicTrackDownloader`
 
 **Windows**
 
-1. Download the Windows zip → unzip → run `CHARLIEDL.exe`
+1. Download the Windows zip → unzip → run `MusicTrackDownloader.exe`
 2. SmartScreen: **More info → Run anyway**
-3. Files save to `%USERPROFILE%\Downloads\CHARLIEDL`
+3. Files save to `%USERPROFILE%\Downloads\MusicTrackDownloader`
+
+### Updates
+
+The app shows its version (`v1.1.0`, etc.) in the window title and header.  
+On launch it checks GitHub for a newer `VERSION` file — if you’re behind, a dialog offers to open the download page.
 
 ---
 
@@ -71,23 +76,20 @@ Every push to **`main`** runs GitHub Actions (**Build & Release**):
 1. Builds **macOS** (Apple Silicon) and **Windows** in the cloud  
 2. Publishes both zips to the **[Latest builds](https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest)** release  
 
-README download links always point at that release — no need to upload Mac by hand.
-
-You can also trigger a rebuild manually: **Actions → Build & Release → Run workflow**.
-
-Do **not** commit `.app` / `.exe` / large zips into git — Releases stay the download source.
+To ship a new version number: bump [`VERSION`](VERSION) **and** `APP_VERSION` in [`version.py`](version.py), then push.
 
 ---
 
 ## Features
 
-- Tracks **and** playlists
-- SoundCloud + YouTube (more platforms maybe later)
-- Optional browser login (Chrome / Edge / Firefox)
-- YouTube fallback when a SoundCloud track fails
-- Cover art when possible
-- Rate-limit aware SoundCloud downloads
-- Stop / skip existing / open folder when done
+- Tracks **and** playlists  
+- SoundCloud + YouTube (more platforms maybe later)  
+- Optional browser login (Chrome / Edge / Firefox)  
+- YouTube fallback when a SoundCloud track fails  
+- Cover art when possible  
+- Rate-limit aware SoundCloud downloads  
+- Stop / skip existing / open folder when done  
+- In-app version + update reminder  
 
 ---
 
@@ -99,15 +101,11 @@ Do **not** commit `.app` / `.exe` / large zips into git — Releases stay the do
 ./build_app.sh
 ```
 
-Produces `dist/CHARLIEDL.app` and `dist/CHARLIEDL-mac-arm64.zip`.
-
-Upload the zip to a GitHub Release (or run `./publish_mac_release.sh v1.0.0` if `gh` is installed and authenticated).
+Produces `dist/Music Track Downloader.app` and `dist/MusicTrackDownloader-mac-arm64.zip`.
 
 ### Windows app
 
-Built automatically by CI on push to `main`. Manual rebuild: Actions → **Build & Release**.
-
-On a Windows PC: `.\build_windows.ps1`
+Built automatically by CI on push to `main`. Manual: Actions → **Build & Release**, or on Windows `.\build_windows.ps1`.
 
 ### Dev GUI (Mac)
 
@@ -134,6 +132,7 @@ Requires Python 3.10+. Optional: `brew install ffmpeg deno`.
 - [x] SoundCloud tracks & playlists  
 - [x] YouTube tracks & playlists  
 - [x] macOS + Windows packaging  
+- [x] Version display + update check  
 - [ ] Deezer (maybe)  
 - [ ] Spotify (maybe)  
 
@@ -145,6 +144,7 @@ Requires Python 3.10+. Optional: `brew install ffmpeg deno`.
 |------|------|
 | `app_gui.py` | Desktop UI |
 | `download_playlist.py` | Download engine |
+| `version.py` / `VERSION` | App name + version |
 | `build_app.sh` | macOS package |
 | `build_windows.ps1` | Windows package |
 | `.github/workflows/build-and-release.yml` | Auto Mac + Windows build & release |

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a double-clickable CHARLIEDL.app for Mac friends (Apple Silicon).
+# Build Music Track Downloader.app for Mac (Apple Silicon).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -10,8 +10,10 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
+APP_NAME="Music Track Downloader"
+APP_SHORT="MusicTrackDownloader"
+
 resolve_python() {
-  # Prefer explicit env (CI), then common local installs.
   if [[ -n "${PYTHON_BIN:-}" && -x "${PYTHON_BIN}" ]]; then
     echo "$PYTHON_BIN"
     return
@@ -38,7 +40,6 @@ resolve_python() {
 
 PY="$(resolve_python)"
 VENV="$ROOT/.venv"
-# CI: use a fresh venv name so runners don't clash with a stale local .venv
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   VENV="$ROOT/.venv-ci"
 fi
@@ -49,21 +50,22 @@ fi
 "$VENV/bin/pip" install -q -U pip
 "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt" pyinstaller imageio-ffmpeg
 
-echo "Building CHARLIEDL.app (takes a few minutes)…"
+# Keep VERSION file in sync with version.py
+"$VENV/bin/python" -c "from version import APP_VERSION; open('VERSION','w').write(APP_VERSION+'\n')"
+
+echo "Building ${APP_NAME}.app (takes a few minutes)…"
 chmod -R u+w "$ROOT/build" "$ROOT/dist" 2>/dev/null || true
 rm -rf "$ROOT/build" "$ROOT/dist"
-"$VENV/bin/pyinstaller" --noconfirm --clean "$ROOT/CHARLIEDL.spec"
+"$VENV/bin/pyinstaller" --noconfirm --clean "$ROOT/MusicTrackDownloader.spec"
 
-APP="$ROOT/dist/CHARLIEDL.app"
+APP="$ROOT/dist/${APP_NAME}.app"
 if [[ ! -d "$APP" ]]; then
   echo "Build failed: $APP not found" >&2
   exit 1
 fi
 
-# Make sure imageio ffmpeg binaries inside the bundle are executable
 find "$APP" -type f \( -name 'ffmpeg' -o -name 'ffmpeg-*' \) -exec chmod +x {} \;
 
-# Bundle static ffmpeg + ffprobe (arm64) so friends don't need Homebrew
 FFMPEG_CACHE="$ROOT/build/ffmpeg-cache"
 mkdir -p "$FFMPEG_CACHE"
 bundle_ffmpeg_tool() {
@@ -86,7 +88,6 @@ else
   echo "Warning: could not bundle ffmpeg/ffprobe — YouTube postprocess may fail." >&2
 fi
 
-# Bundle Deno so YouTube JS challenges work without Homebrew on friends' Macs
 DENO_BIN="$(command -v deno || true)"
 if [[ -z "$DENO_BIN" && -x /opt/homebrew/bin/deno ]]; then
   DENO_BIN=/opt/homebrew/bin/deno
@@ -114,8 +115,7 @@ else
   echo "Warning: deno not found — YouTube downloads may fail in the .app." >&2
 fi
 
-# Zip for AirDrop / Drive (single file to send)
-ZIP="$ROOT/dist/CHARLIEDL-mac-arm64.zip"
+ZIP="$ROOT/dist/${APP_SHORT}-mac-arm64.zip"
 rm -f "$ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 
@@ -129,8 +129,8 @@ echo "  Zip : $ZIP  ($ZIPSIZE)"
 echo ""
 echo "Pour tes potes :"
 echo "  1) Envoie le .zip"
-echo "  2) Ils dézippent → CHARLIEDL.app"
+echo "  2) Ils dézippent → ${APP_NAME}.app"
 echo "  3) Première fois : clic droit → Ouvrir (Gatekeeper)"
-echo "  4) Fichiers dans ~/Downloads/CHARLIEDL"
+echo "  4) Fichiers dans ~/Downloads/${APP_SHORT}"
 echo ""
-echo "Note : build Apple Silicon (M1/M2/M3/M4). Mac Intel = autre build."
+echo "Note : build Apple Silicon (M1/M2/M3/M4)."

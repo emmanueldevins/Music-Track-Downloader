@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""Mac desktop UI for SoundCloud playlist downloads."""
+"""Desktop UI for Music Track Downloader."""
 
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import (
     QColor,
-    QFont,
+    QDesktopServices,
     QLinearGradient,
     QPainter,
     QRadialGradient,
     QTextCursor,
 )
+from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -44,10 +47,18 @@ from download_playlist import (
     sanitize_folder_name,
     set_log_callback,
 )
+from version import (
+    APP_NAME,
+    APP_VERSION,
+    DOWNLOAD_MAC_URL,
+    DOWNLOAD_WIN_URL,
+    RELEASES_URL,
+    REMOTE_VERSION_URL,
+)
 
 ROOT = Path(__file__).resolve().parent
 if getattr(sys, "frozen", False):
-    DEFAULT_OUTPUT = Path.home() / "Downloads" / "CHARLIEDL"
+    DEFAULT_OUTPUT = Path.home() / "Downloads" / "MusicTrackDownloader"
 else:
     DEFAULT_OUTPUT = ROOT / "downloads"
 
@@ -57,6 +68,47 @@ def optimal_jobs() -> int:
     cpus = os.cpu_count() or 4
     return max(2, min(cpus * 2, 12))
 
+
+def parse_version(text: str) -> tuple[int, ...]:
+    cleaned = text.strip().lstrip("vV")
+    parts: list[int] = []
+    for chunk in cleaned.split("."):
+        digits = "".join(c for c in chunk if c.isdigit())
+        if digits:
+            parts.append(int(digits))
+    return tuple(parts) if parts else (0,)
+
+
+def version_is_newer(remote: str, local: str) -> bool:
+    return parse_version(remote) > parse_version(local)
+
+
+def fetch_remote_version(timeout: float = 6.0) -> str | None:
+    """Read VERSION from GitHub main branch."""
+    try:
+        request = urllib.request.Request(
+            REMOTE_VERSION_URL,
+            headers={"User-Agent": f"{APP_NAME}/{APP_VERSION}"},
+        )
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8", "ignore").strip()
+        if raw and parse_version(raw) != (0,):
+            return raw.splitlines()[0].strip()
+    except (OSError, urllib.error.URLError, ValueError):
+        pass
+    return None
+
+
+def open_path(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "darwin":
+        subprocess.run(["open", str(path)], check=False)
+    elif sys.platform == "win32":
+        os.startfile(str(path))  # type: ignore[attr-defined]
+    else:
+        subprocess.run(["xdg-open", str(path)], check=False)
+
+
 STYLESHEET = """
 QWidget#root {
     color: #f4f0ea;
@@ -65,9 +117,15 @@ QWidget#root {
 
 QLabel#brand {
     color: #ff5a1f;
-    font-size: 42px;
+    font-size: 28px;
     font-weight: 800;
-    letter-spacing: -1.5px;
+    letter-spacing: -0.8px;
+}
+
+QLabel#versionLabel {
+    color: rgba(244, 240, 234, 0.40);
+    font-size: 12px;
+    font-weight: 600;
 }
 
 QLabel#tagline {
@@ -75,6 +133,7 @@ QLabel#tagline {
     font-size: 15px;
     font-weight: 500;
 }
+
 
 QLabel#hint {
     color: rgba(244, 240, 234, 0.38);
@@ -296,13 +355,24 @@ class DownloadWorker(QThread):
         self.finished_ok.emit(code)
 
 
+class UpdateCheckWorker(QThread):
+    """Fetch remote VERSION without blocking the UI."""
+
+    result = Signal(str)  # remote version string, or ""
+
+    def run(self) -> None:
+        remote = fetch_remote_version()
+        self.result.emit(remote or "")
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("CHARLIEDL")
+        self.setWindowTitle(f"{APP_NAME}  ·  v{APP_VERSION}")
         self.resize(720, 640)
         self.setMinimumSize(580, 540)
         self.worker: DownloadWorker | None = None
+        self._update_worker: UpdateCheckWorker | None = None
         self._folder = DEFAULT_OUTPUT
         self._last_output: Path | None = None
         self._title_url = ""
@@ -319,13 +389,21 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(36, 36, 36, 28)
         layout.setSpacing(0)
 
-        brand = QLabel("CHARLIEDL")
+        brand_row = QHBoxLayout()
+        brand_row.setSpacing(12)
+        brand = QLabel(APP_NAME)
         brand.setObjectName("brand")
-        layout.addWidget(brand)
+        brand_row.addWidget(brand)
+        brand_row.addStretch(1)
+        self.version_label = QLabel(f"v{APP_VERSION}")
+        self.version_label.setObjectName("versionLabel")
+        self.version_label.setToolTip("Version installée")
+        brand_row.addWidget(self.version_label, alignment=Qt.AlignBottom)
+        layout.addLayout(brand_row)
         layout.addSpacing(6)
 
         tagline = QLabel(
-            "SoundCloud ou YouTube → fichiers sur ton Mac, prêts pour la clé USB."
+            "SoundCloud ou YouTube → fichiers audio, prêts pour la clé USB."
         )
         tagline.setObjectName("tagline")
         tagline.setWordWrap(True)
@@ -486,6 +564,38 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.log_panel)
         layout.addStretch(1)
 
+        # Check for updates shortly after launch (non-blocking).
+        QTimer.singleShot(1200, self._start_update_check)
+
+    def _start_update_check(self) -> None:
+        if self._update_worker is not None and self._update_worker.isRunning():
+            return
+        self._update_worker = UpdateCheckWorker()
+        self._update_worker.result.connect(self._on_update_check)
+        self._update_worker.start()
+
+    def _on_update_check(self, remote: str) -> None:
+        self._update_worker = None
+        if not remote or not version_is_newer(remote, APP_VERSION):
+            return
+        download_url = DOWNLOAD_WIN_URL if sys.platform == "win32" else DOWNLOAD_MAC_URL
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Information)
+        box.setWindowTitle("Mise à jour disponible")
+        box.setText(
+            f"Une nouvelle version est disponible : <b>v{remote}</b><br>"
+            f"Tu as actuellement la <b>v{APP_VERSION}</b>."
+        )
+        box.setInformativeText(
+            "Télécharge la dernière version pour corriger les bugs et profiter des nouveautés."
+        )
+        download_btn = box.addButton("Télécharger", QMessageBox.AcceptRole)
+        box.addButton("Plus tard", QMessageBox.RejectRole)
+        box.exec()
+        if box.clickedButton() is download_btn:
+            QDesktopServices.openUrl(QUrl(download_url))
+            QDesktopServices.openUrl(QUrl(RELEASES_URL))
+
     def _resolve_output_dir(self) -> Path:
         name = self.name_input.text().strip()
         if self.create_folder.isChecked() and name:
@@ -560,8 +670,7 @@ class MainWindow(QMainWindow):
 
     def open_folder(self) -> None:
         target = self._last_output or self._resolve_output_dir()
-        target.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["open", str(target)], check=False)
+        open_path(target)
 
     def append_log(self, message: str) -> None:
         if self.log_view.isHidden():
@@ -648,7 +757,8 @@ class MainWindow(QMainWindow):
 def main() -> int:
     resolve_ffmpeg()
     app = QApplication(sys.argv)
-    app.setApplicationName("CHARLIEDL")
+    app.setApplicationName(APP_NAME)
+    app.setApplicationVersion(APP_VERSION)
     app.setStyle("Fusion")
     app.setStyleSheet(STYLESHEET)
     window = MainWindow()

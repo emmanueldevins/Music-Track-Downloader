@@ -1,7 +1,6 @@
 name: Build & Release
 
 # On every push to main: build Mac + Windows and publish to the "latest" GitHub Release.
-# README download links then always point at current builds.
 
 on:
   push:
@@ -33,8 +32,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: CHARLIEDL-mac-arm64
-          path: dist/CHARLIEDL-mac-arm64.zip
+          name: MusicTrackDownloader-mac-arm64
+          path: dist/MusicTrackDownloader-mac-arm64.zip
 
   build-windows:
     name: Windows (x64)
@@ -52,8 +51,8 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: CHARLIEDL-win64
-          path: dist/CHARLIEDL-win64.zip
+          name: MusicTrackDownloader-win64
+          path: dist/MusicTrackDownloader-win64.zip
 
   publish:
     name: Publish GitHub Release
@@ -62,41 +61,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read version
+        id: ver
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
       - name: Download Mac zip
         uses: actions/download-artifact@v4
         with:
-          name: CHARLIEDL-mac-arm64
+          name: MusicTrackDownloader-mac-arm64
           path: release-assets
 
       - name: Download Windows zip
         uses: actions/download-artifact@v4
         with:
-          name: CHARLIEDL-win64
+          name: MusicTrackDownloader-win64
           path: release-assets
 
       - name: Publish / update latest release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Latest builds (auto)
+          name: Music Track Downloader v${{ steps.ver.outputs.version }}
           body: |
             **Personal / educational use only — no commercial use.** See [LICENSE](../blob/main/LICENSE) and [README](../blob/main/README.md).
 
-            These builds are updated automatically on every push to `main`.
+            **Version:** `${{ steps.ver.outputs.version }}`  
+            Auto-built on push to `main` (commit `${{ github.sha }}`).
 
             | Platform | File |
             |----------|------|
-            | macOS Apple Silicon | `CHARLIEDL-mac-arm64.zip` |
-            | Windows 64-bit | `CHARLIEDL-win64.zip` |
+            | macOS Apple Silicon | `MusicTrackDownloader-mac-arm64.zip` |
+            | Windows 64-bit | `MusicTrackDownloader-win64.zip` |
 
             ### Install
-            - **Mac:** unzip → right-click `CHARLIEDL.app` → Open
-            - **Windows:** unzip → `CHARLIEDL.exe` (SmartScreen → More info → Run anyway)
-
-            Commit: `${{ github.sha }}`
+            - **Mac:** unzip → right-click `Music Track Downloader.app` → Open
+            - **Windows:** unzip → `MusicTrackDownloader.exe` (SmartScreen → More info → Run anyway)
           files: |
-            release-assets/CHARLIEDL-mac-arm64.zip
-            release-assets/CHARLIEDL-win64.zip
+            release-assets/MusicTrackDownloader-mac-arm64.zip
+            release-assets/MusicTrackDownloader-win64.zip
           draft: false
           prerelease: false
           make_latest: true

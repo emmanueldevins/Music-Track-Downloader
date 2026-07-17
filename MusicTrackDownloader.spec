@@ -1,17 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for CHARLIEDL.app — lean Mac build for non-devs."""
+"""PyInstaller spec for Music Track Downloader.app (macOS)."""
 
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 
+from version import APP_NAME, APP_NAME_SHORT, APP_VERSION
+
 block_cipher = None
 root = Path(SPECPATH)
 
-datas = []
+datas = [(str(root / "VERSION"), ".")]
 binaries = []
 hiddenimports = [
     "download_playlist",
+    "version",
     "mutagen",
     "mutagen.mp4",
     "mutagen.id3",
@@ -19,7 +22,6 @@ hiddenimports = [
     "imageio_ffmpeg",
 ]
 
-# Only what we need — collect_all(PySide6) pulls WebEngine (~hundreds of MB).
 for package in ("yt_dlp", "imageio_ffmpeg", "mutagen"):
     pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
     datas += pkg_datas
@@ -84,7 +86,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="CHARLIEDL",
+    name=APP_NAME_SHORT,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -105,23 +107,23 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name="CHARLIEDL",
+    name=APP_NAME_SHORT,
 )
 
 app = BUNDLE(
     coll,
-    name="CHARLIEDL.app",
+    name=f"{APP_NAME}.app",
     icon=None,
-    bundle_identifier="com.charliedl.app",
+    bundle_identifier="com.musictrackdownloader.app",
     info_plist={
-        "CFBundleName": "CHARLIEDL",
-        "CFBundleDisplayName": "CHARLIEDL",
-        "CFBundleShortVersionString": "1.0.0",
-        "CFBundleVersion": "1.0.0",
+        "CFBundleName": APP_NAME,
+        "CFBundleDisplayName": APP_NAME,
+        "CFBundleShortVersionString": APP_VERSION,
+        "CFBundleVersion": APP_VERSION,
         "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "12.0",
         "NSAppleEventsUsageDescription": (
-            "CHARLIEDL peut lire les cookies du navigateur pour SoundCloud."
+            f"{APP_NAME} peut lire les cookies du navigateur pour SoundCloud / YouTube."
         ),
     },
 )

@@ -1,17 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for CHARLIEDL on Windows (64-bit folder build)."""
+"""PyInstaller spec for Music Track Downloader (Windows 64-bit folder build)."""
 
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 
+from version import APP_NAME_SHORT
+
 block_cipher = None
 root = Path(SPECPATH)
 
-datas = []
+datas = [(str(root / "VERSION"), ".")]
 binaries = []
 hiddenimports = [
     "download_playlist",
+    "version",
     "mutagen",
     "mutagen.mp4",
     "mutagen.id3",
@@ -83,7 +86,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="CHARLIEDL",
+    name=APP_NAME_SHORT,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -104,5 +107,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name="CHARLIEDL",
+    name=APP_NAME_SHORT,
 )
