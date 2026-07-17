@@ -50,21 +50,38 @@ Stable downloads are published on **GitHub Releases**.
 
 ### Install notes
 
-**macOS**
+**macOS (important — Gatekeeper will block the app)**
 
-1. Download the Mac zip → unzip → `MusicTrackDownloader.app`  
-   (display name: **Music Track Downloader**)
-2. If macOS says the app is **« endommagé » / damaged**, it’s Gatekeeper (unsigned download from the internet). Fix in Terminal:
+Apple blocks apps that are not from the App Store / “identified developers”. This project is a personal / hobby app **without** an Apple Developer certificate, so macOS will show warnings such as:
+
+- *« MusicTrackDownloader » a été bloqué pour protéger votre Mac*
+- *« … est endommagé et ne peut pas être ouvert »*
+
+That is **normal**, not a broken download.
+
+#### Option A — Recommended (System Settings)
+
+1. Download the Mac zip → unzip → `MusicTrackDownloader.app`
+2. Try to open the app once (double-click). macOS will block it.
+3. Open **Réglages Système → Confidentialité et sécurité**
+4. Scroll to **Sécurité** — you should see a message that MusicTrackDownloader was blocked
+5. Click **Ouvrir quand même**
+6. In the confirmation dialog, click **Ouvrir quand même** again
+
+![macOS: Ouvrir quand même in Privacy & Security](docs/macos-gatekeeper-settings.png)
+
+![macOS: confirmation dialog](docs/macos-gatekeeper-dialog.png)
+
+#### Option B — Terminal (if the app still won’t open)
 
 ```bash
 xattr -cr ~/Downloads/MusicTrackDownloader.app
+open ~/Downloads/MusicTrackDownloader.app
 ```
 
-(Adjust the path if you unzipped elsewhere.) Then open the app normally, or **right-click → Open**.
+(Adjust the path if you unzipped elsewhere.)
 
-3. Files save to `~/Downloads/MusicTrackDownloader`
-
-> We don’t have an Apple Developer certificate yet, so macOS will keep warning on first open. Removing the quarantine flag (`xattr`) is the normal fix for personal / hobby apps.
+Files save to `~/Downloads/MusicTrackDownloader`.
 
 **Windows**
 
