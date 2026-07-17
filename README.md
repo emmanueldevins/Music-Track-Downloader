@@ -91,8 +91,17 @@ Files save to `~/Downloads/MusicTrackDownloader`.
 
 ### Updates
 
-The app shows its version (`v1.1.0`, etc.) in the window title and header.  
-On launch it checks GitHub for a newer `VERSION` file — if you’re behind, a dialog offers to open the download page.
+The app shows its version (`v1.1.0`, etc.) in the top-right.
+
+**Update check runs when you launch the app** (after ~1 second).  
+If a newer version exists on GitHub, you get:
+
+1. A popup **« Mise à jour disponible »**
+2. An orange banner under the title with a **Télécharger** button
+
+You can also **click the version number** (`v1.1.2`) anytime to re-check.
+
+> If the app was already open when a new version was published, **quit and reopen** it to see the update prompt.
 
 ---
 

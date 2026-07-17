@@ -127,6 +127,30 @@ QLabel#versionLabel {
     font-size: 12px;
     font-weight: 600;
 }
+QLabel#versionLabel:hover {
+    color: rgba(255, 138, 76, 0.95);
+}
+
+QFrame#updateBanner {
+    background: rgba(255, 90, 31, 0.18);
+    border: 1px solid rgba(255, 90, 31, 0.45);
+    border-radius: 14px;
+}
+QLabel#updateBannerText {
+    color: #ffd0bc;
+    font-size: 13px;
+    font-weight: 600;
+}
+QPushButton#updateBannerBtn {
+    background: #ff5a1f;
+    color: #1a100c;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+}
+QPushButton#updateBannerBtn:hover { background: #ff7a45; }
 
 QLabel#tagline {
     color: rgba(244, 240, 234, 0.62);
@@ -373,6 +397,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(580, 540)
         self.worker: DownloadWorker | None = None
         self._update_worker: UpdateCheckWorker | None = None
+        self._remote_version: str | None = None
         self._folder = DEFAULT_OUTPUT
         self._last_output: Path | None = None
         self._title_url = ""
@@ -397,7 +422,11 @@ class MainWindow(QMainWindow):
         brand_row.addStretch(1)
         self.version_label = QLabel(f"v{APP_VERSION}")
         self.version_label.setObjectName("versionLabel")
-        self.version_label.setToolTip("Version installée")
+        self.version_label.setToolTip("Cliquer pour vérifier les mises à jour")
+        self.version_label.setCursor(Qt.PointingHandCursor)
+        self.version_label.mousePressEvent = (  # type: ignore[method-assign]
+            lambda _event: self._start_update_check(force_dialog=True)
+        )
         brand_row.addWidget(self.version_label, alignment=Qt.AlignBottom)
         layout.addLayout(brand_row)
         layout.addSpacing(6)
@@ -408,7 +437,25 @@ class MainWindow(QMainWindow):
         tagline.setObjectName("tagline")
         tagline.setWordWrap(True)
         layout.addWidget(tagline)
-        layout.addSpacing(28)
+        layout.addSpacing(12)
+
+        self.update_banner = QFrame()
+        self.update_banner.setObjectName("updateBanner")
+        banner_layout = QHBoxLayout(self.update_banner)
+        banner_layout.setContentsMargins(14, 10, 14, 10)
+        banner_layout.setSpacing(10)
+        self.update_banner_text = QLabel()
+        self.update_banner_text.setObjectName("updateBannerText")
+        self.update_banner_text.setWordWrap(True)
+        banner_layout.addWidget(self.update_banner_text, stretch=1)
+        self.update_banner_btn = QPushButton("Télécharger")
+        self.update_banner_btn.setObjectName("updateBannerBtn")
+        self.update_banner_btn.setCursor(Qt.PointingHandCursor)
+        self.update_banner_btn.clicked.connect(self._open_update_download)
+        banner_layout.addWidget(self.update_banner_btn)
+        self.update_banner.hide()
+        layout.addWidget(self.update_banner)
+        layout.addSpacing(16)
 
         self.url_input = QLineEdit()
         self.url_input.setObjectName("urlInput")
@@ -565,36 +612,80 @@ class MainWindow(QMainWindow):
         layout.addStretch(1)
 
         # Check for updates shortly after launch (non-blocking).
-        QTimer.singleShot(1200, self._start_update_check)
+        QTimer.singleShot(1200, lambda: self._start_update_check(force_dialog=True))
 
-    def _start_update_check(self) -> None:
+    def _download_url_for_platform(self) -> str:
+        return DOWNLOAD_WIN_URL if sys.platform == "win32" else DOWNLOAD_MAC_URL
+
+    def _open_update_download(self) -> None:
+        QDesktopServices.openUrl(QUrl(self._download_url_for_platform()))
+        QDesktopServices.openUrl(QUrl(RELEASES_URL))
+
+    def _start_update_check(self, force_dialog: bool = False) -> None:
         if self._update_worker is not None and self._update_worker.isRunning():
             return
+        self._pending_force_dialog = force_dialog
+        if force_dialog:
+            self.set_status("Vérification des mises à jour…", "busy")
         self._update_worker = UpdateCheckWorker()
         self._update_worker.result.connect(self._on_update_check)
         self._update_worker.start()
 
     def _on_update_check(self, remote: str) -> None:
         self._update_worker = None
-        if not remote or not version_is_newer(remote, APP_VERSION):
+        force_dialog = getattr(self, "_pending_force_dialog", False)
+        self._pending_force_dialog = False
+
+        if not remote:
+            if force_dialog:
+                self.set_status("Impossible de vérifier les mises à jour (réseau).", "warn")
+                QMessageBox.information(
+                    self,
+                    "Mise à jour",
+                    "Impossible de contacter GitHub pour vérifier la version.\n"
+                    "Vérifie ta connexion internet.",
+                )
             return
-        download_url = DOWNLOAD_WIN_URL if sys.platform == "win32" else DOWNLOAD_MAC_URL
+
+        if not version_is_newer(remote, APP_VERSION):
+            self.version_label.setText(f"v{APP_VERSION} · à jour")
+            self.update_banner.hide()
+            if force_dialog:
+                self.set_status("Prêt", "ready")
+                QMessageBox.information(
+                    self,
+                    "À jour",
+                    f"Tu as déjà la dernière version (v{APP_VERSION}).",
+                )
+            return
+
+        self._remote_version = remote
+        self.version_label.setText(f"v{APP_VERSION} → v{remote}")
+        self.update_banner_text.setText(
+            f"Nouvelle version disponible : v{remote}  (tu as v{APP_VERSION})"
+        )
+        self.update_banner.show()
+        self.set_status(f"Mise à jour disponible : v{remote}", "warn")
+        self.raise_()
+        self.activateWindow()
+
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Information)
         box.setWindowTitle("Mise à jour disponible")
+        box.setTextFormat(Qt.RichText)
         box.setText(
             f"Une nouvelle version est disponible : <b>v{remote}</b><br>"
             f"Tu as actuellement la <b>v{APP_VERSION}</b>."
         )
         box.setInformativeText(
-            "Télécharge la dernière version pour corriger les bugs et profiter des nouveautés."
+            "Télécharge la dernière version, puis remplace l’ancienne app."
         )
+        box.setWindowModality(Qt.ApplicationModal)
         download_btn = box.addButton("Télécharger", QMessageBox.AcceptRole)
         box.addButton("Plus tard", QMessageBox.RejectRole)
         box.exec()
         if box.clickedButton() is download_btn:
-            QDesktopServices.openUrl(QUrl(download_url))
-            QDesktopServices.openUrl(QUrl(RELEASES_URL))
+            self._open_update_download()
 
     def _resolve_output_dir(self) -> Path:
         name = self.name_input.text().strip()
