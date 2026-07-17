@@ -1,0 +1,25 @@
+# GitLab CI — builds CHARLIEDL for Windows (64-bit).
+# Requires a Windows runner (GitLab.com shared runners or your own).
+#
+# GitLab.com: Settings → CI/CD → Runners → enable shared runners
+#   (Windows tags: saas-windows-medium-amd64 on gitlab.com free tier, if available)
+# Self-hosted: register a runner with tag "windows" on a Windows machine.
+
+stages:
+  - build
+
+build-windows:
+  stage: build
+  tags:
+    - saas-windows-medium-amd64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH
+  script:
+    - powershell -NoProfile -ExecutionPolicy Bypass -File .\build_windows.ps1
+  artifacts:
+    name: CHARLIEDL-win64
+    paths:
+      - dist/CHARLIEDL-win64.zip
+      - dist/CHARLIEDL/
+    expire_in: 30 days

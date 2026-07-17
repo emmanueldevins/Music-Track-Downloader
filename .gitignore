@@ -1,0 +1,10 @@
+.venv/
+.venv-win/
+__pycache__/
+*.py[cod]
+downloads/
+.download-archive.txt
+.DS_Store
+build/
+dist/
+*.spec.bak
