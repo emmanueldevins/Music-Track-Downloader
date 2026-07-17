@@ -5,6 +5,8 @@
 
 Desktop tool to download **music tracks and playlists** as audio files (e.g. for personal DJ / USB practice).
 
+**For personal use only — for your own music** (content you own, created, or are allowed to copy). Not for commercial use.
+
 **Version:** see [`VERSION`](VERSION) (shown in the app as `v…`)
 
 **Supported today:** SoundCloud & YouTube (tracks + playlists)  
@@ -16,10 +18,11 @@ Desktop tool to download **music tracks and playlists** as audio files (e.g. for
 
 **Read this first.**
 
-This project is provided **for fun, learning, and personal use only**.
+This project is provided **for fun, learning, and personal use only — for your own music**.
 
 | Rule | Meaning |
 |------|---------|
+| **Your own music** | Use this for tracks you own, created, or have explicit permission to download/copy (e.g. your DJ sets, your uploads, licensed personal copies). |
 | **No commercial use** | Do not sell, rent, license, or use this software (or files obtained with it) in any business, paid gig pipeline, shop, SaaS, or monetized workflow. |
 | **No redistribution as a product** | Do not repackage or sell this app. Sharing the GitHub link with friends is fine; selling copies is not. |
 | **You are responsible** | You alone decide what you download. You must comply with the terms of service of SoundCloud, YouTube, and any other site, plus copyright and local law. |

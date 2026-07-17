@@ -161,13 +161,14 @@ jobs:
           name: MusicTrackDownloader-win64
           path: release-assets
 
-      - name: Publish / update latest release
+      - name: Publish versioned GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
+          tag_name: v${{ needs.bump-version.outputs.version }}
           name: Music Track Downloader v${{ needs.bump-version.outputs.version }}
           body: |
-            **Personal / educational use only — no commercial use.** See [LICENSE](../blob/main/LICENSE) and [README](../blob/main/README.md).
+            **Personal use only — for your own music. No commercial use.**  
+            See [LICENSE](../blob/main/LICENSE) and [README](../blob/main/README.md).
 
             **Version:** `${{ needs.bump-version.outputs.version }}`  
             Auto-bumped and built on push to `main`.

@@ -222,6 +222,12 @@ QLabel#hint {
     font-weight: 500;
 }
 
+QLabel#footerLegal {
+    color: rgba(244, 240, 234, 0.32);
+    font-size: 11px;
+    font-weight: 500;
+}
+
 QLabel#pathLabel {
     color: rgba(244, 240, 234, 0.55);
     font-size: 12px;
@@ -667,6 +673,20 @@ class MainWindow(QMainWindow):
         log_layout.addWidget(self.log_view)
         layout.addWidget(self.log_panel)
         layout.addStretch(1)
+
+        footer = QLabel(
+            "Usage personnel uniquement — pour ta propre musique. "
+            "Pas d’usage commercial."
+        )
+        footer.setObjectName("footerLegal")
+        footer.setWordWrap(True)
+        footer.setAlignment(Qt.AlignCenter)
+        footer.setToolTip(
+            "Outil privé / éducatif : télécharge uniquement de la musique "
+            "que tu as le droit d’utiliser (ta propre musique, ou contenu autorisé)."
+        )
+        layout.addSpacing(10)
+        layout.addWidget(footer)
 
         # Check for updates shortly after launch (banner only; no error modal).
         QTimer.singleShot(1200, lambda: self._start_update_check(force_dialog=False))

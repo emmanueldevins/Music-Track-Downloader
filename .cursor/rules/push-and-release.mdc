@@ -1,0 +1,13 @@
+---
+description: On push/ship/release for this repo — emoji commits + GitHub Release via CI
+alwaysApply: true
+---
+
+# Push & release
+
+When the user asks to push, ship, or release this project, follow `.cursor/skills/push-and-release/SKILL.md`:
+
+1. Commit with an **emoji** conventional message (✨ feat / 🐛 fix / 💄 ui / 📝 docs / 🔧 chore / …).
+2. Push to `main` (rebase if remote moved).
+3. Rely on GitHub Actions to bump version, build Mac+Windows, and publish release `vX.Y.Z`.
+4. Share the Actions run URL and https://github.com/emmanueldevins/Music-Track-Downloader/releases/latest
