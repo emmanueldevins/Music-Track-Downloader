@@ -54,8 +54,17 @@ Stable downloads are published on **GitHub Releases**.
 
 1. Download the Mac zip → unzip → `MusicTrackDownloader.app`  
    (display name: **Music Track Downloader**)
-2. First launch: **right-click → Open** (Gatekeeper)
+2. If macOS says the app is **« endommagé » / damaged**, it’s Gatekeeper (unsigned download from the internet). Fix in Terminal:
+
+```bash
+xattr -cr ~/Downloads/MusicTrackDownloader.app
+```
+
+(Adjust the path if you unzipped elsewhere.) Then open the app normally, or **right-click → Open**.
+
 3. Files save to `~/Downloads/MusicTrackDownloader`
+
+> We don’t have an Apple Developer certificate yet, so macOS will keep warning on first open. Removing the quarantine flag (`xattr`) is the normal fix for personal / hobby apps.
 
 **Windows**
 

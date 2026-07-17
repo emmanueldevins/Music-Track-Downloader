@@ -178,7 +178,9 @@ jobs:
             | Windows 64-bit | `MusicTrackDownloader-win64.zip` |
 
             ### Install
-            - **Mac:** unzip → right-click `MusicTrackDownloader.app` → Open
+            - **Mac:** unzip → if macOS says « endommagé », run:
+              `xattr -cr ~/Downloads/MusicTrackDownloader.app`
+              then open the app (or right-click → Open)
             - **Windows:** unzip → `MusicTrackDownloader.exe` (SmartScreen → More info → Run anyway)
           files: |
             release-assets/MusicTrackDownloader-mac-arm64.zip

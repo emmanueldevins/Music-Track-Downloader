@@ -115,6 +115,18 @@ else
   echo "Warning: deno not found — YouTube downloads may fail in the .app." >&2
 fi
 
+# Ad-hoc sign so macOS doesn't treat the app as "damaged" as often.
+# Full notarization still needs an Apple Developer ID ($99/yr).
+echo "Signing app (ad-hoc)…"
+codesign --force --deep --sign - "$APP" 2>/dev/null || true
+# Also sign nested binaries explicitly
+for bin in ffmpeg ffprobe deno "$APP_SHORT"; do
+  if [[ -f "$APP/Contents/MacOS/$bin" ]]; then
+    codesign --force --sign - "$APP/Contents/MacOS/$bin" 2>/dev/null || true
+  fi
+done
+codesign --force --deep --sign - "$APP" 2>/dev/null || true
+
 ZIP="$ROOT/dist/${APP_SHORT}-mac-arm64.zip"
 rm -f "$ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
@@ -129,8 +141,10 @@ echo "  Zip : $ZIP  ($ZIPSIZE)"
 echo ""
 echo "Pour tes potes :"
 echo "  1) Envoie le .zip"
-echo "  2) Ils dézippent → ${APP_SHORT}.app (Music Track Downloader)"
-echo "  3) Première fois : clic droit → Ouvrir (Gatekeeper)"
+echo "  2) Ils dézippent → ${APP_SHORT}.app"
+echo "  3) Si macOS dit « endommagé » :"
+echo "       xattr -cr \"~/Downloads/${APP_SHORT}.app\""
+echo "     puis ouvrir l’app (ou clic droit → Ouvrir)"
 echo "  4) Fichiers dans ~/Downloads/${APP_SHORT}"
 echo ""
 echo "Note : build Apple Silicon (M1/M2/M3/M4)."
