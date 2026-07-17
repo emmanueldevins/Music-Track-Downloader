@@ -1,14 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for Music Track Downloader (Windows 64-bit folder build)."""
 
+import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 
-from version import APP_NAME_SHORT
-
 block_cipher = None
 root = Path(SPECPATH)
+sys.path.insert(0, str(root))
+
+from version import APP_NAME_SHORT  # noqa: E402
 
 datas = [(str(root / "VERSION"), ".")]
 binaries = []

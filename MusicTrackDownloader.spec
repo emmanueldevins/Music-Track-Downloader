@@ -1,14 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for Music Track Downloader.app (macOS)."""
 
+import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 
-from version import APP_NAME, APP_NAME_SHORT, APP_VERSION
-
 block_cipher = None
 root = Path(SPECPATH)
+sys.path.insert(0, str(root))
+
+from version import APP_NAME, APP_NAME_SHORT, APP_VERSION  # noqa: E402
 
 datas = [(str(root / "VERSION"), ".")]
 binaries = []
@@ -112,7 +114,7 @@ coll = COLLECT(
 
 app = BUNDLE(
     coll,
-    name=f"{APP_NAME}.app",
+    name=f"{APP_NAME_SHORT}.app",
     icon=None,
     bundle_identifier="com.musictrackdownloader.app",
     info_plist={

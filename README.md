@@ -52,7 +52,8 @@ Stable downloads are published on **GitHub Releases**.
 
 **macOS**
 
-1. Download the Mac zip → unzip → `Music Track Downloader.app`
+1. Download the Mac zip → unzip → `MusicTrackDownloader.app`  
+   (display name: **Music Track Downloader**)
 2. First launch: **right-click → Open** (Gatekeeper)
 3. Files save to `~/Downloads/MusicTrackDownloader`
 
@@ -103,7 +104,7 @@ Manual bump (optional): `python bump_version.py` or `python bump_version.py --se
 ./build_app.sh
 ```
 
-Produces `dist/Music Track Downloader.app` and `dist/MusicTrackDownloader-mac-arm64.zip`.
+Produces `dist/MusicTrackDownloader.app` and `dist/MusicTrackDownloader-mac-arm64.zip`.
 
 ### Windows app
 

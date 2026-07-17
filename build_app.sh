@@ -58,7 +58,7 @@ chmod -R u+w "$ROOT/build" "$ROOT/dist" 2>/dev/null || true
 rm -rf "$ROOT/build" "$ROOT/dist"
 "$VENV/bin/pyinstaller" --noconfirm --clean "$ROOT/MusicTrackDownloader.spec"
 
-APP="$ROOT/dist/${APP_NAME}.app"
+APP="$ROOT/dist/${APP_SHORT}.app"
 if [[ ! -d "$APP" ]]; then
   echo "Build failed: $APP not found" >&2
   exit 1
@@ -129,7 +129,7 @@ echo "  Zip : $ZIP  ($ZIPSIZE)"
 echo ""
 echo "Pour tes potes :"
 echo "  1) Envoie le .zip"
-echo "  2) Ils dézippent → ${APP_NAME}.app"
+echo "  2) Ils dézippent → ${APP_SHORT}.app (Music Track Downloader)"
 echo "  3) Première fois : clic droit → Ouvrir (Gatekeeper)"
 echo "  4) Fichiers dans ~/Downloads/${APP_SHORT}"
 echo ""
